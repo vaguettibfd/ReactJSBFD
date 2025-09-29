@@ -12,7 +12,7 @@ export default class Labelln extends React.Component {
   render() {
     return (
       <>
-        {this.state.valor}
+        {this.state.valor} <br/>
       </>
     );
   }

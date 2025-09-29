@@ -13,7 +13,7 @@ export default function InputText({ placeholder }) {
   }
 
   return (
-    <div>
+    <>
       <input
         type="text"
         placeholder={placeholder}
@@ -21,7 +21,7 @@ export default function InputText({ placeholder }) {
         onChange={handleChange}
       />
       {erro && <p>⚠️ O campo não pode ficar vazio.</p>}
-    </div>
+    </>
   );
 }
 /*

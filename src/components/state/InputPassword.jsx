@@ -8,14 +8,14 @@ export default function InputPassword({ placeholder }) {
   }
 
   return (
-    <div>
+    <>
       <input
         type="password"
         placeholder={placeholder}
         value={senha}
         onChange={handleChange}
       />
-      <p>Senha digitada: {senha}</p>
-    </div>
+      { (senha !== "") &&<p>Senha digitada: {senha}</p>}
+    </>
   );
 }

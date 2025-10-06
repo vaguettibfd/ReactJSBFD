@@ -1,0 +1,9 @@
+Desafio:
+contruir duas telas:
+Cadastro de Pessoas Fisicas e cadastro
+de pessoas Juridicas.
+Colocar todos os campos previstos nos 
+objetos PF e PJ (em cada tela).
+ex: nome, email, cpf ou cnpj, endereço (...),
+telefone (...),  Título ou Inscrição Estadual.
+Sugestão : Criar componentes reutilizaveis de endereco e telefones, etc;

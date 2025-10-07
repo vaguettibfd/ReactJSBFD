@@ -15,11 +15,11 @@ export default function InputPassword({ placeholder }) {
         onChange={(e) => setSenha(e.target.value)}
         size="large"
       />
-      {senha && (
+      {/*senha && (
         <Text type="secondary" italic style={{ display: "block", marginTop: 6 }}>
           Senha digitada: {senha}
         </Text>
-      )}
+      )*/}
     </div>
   );
 }

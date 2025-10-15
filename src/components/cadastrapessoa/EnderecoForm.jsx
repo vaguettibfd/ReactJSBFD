@@ -31,7 +31,7 @@ function EnderecoForm() {
       </Form.Item>
 
       <Row gutter={8}>
-        <Col span={12}>
+        <Col span={13}>
           <Form.Item
             label="Cidade"
             name={["endereco", "cidade"]}
@@ -40,7 +40,7 @@ function EnderecoForm() {
             <Input placeholder="Cidade" />
           </Form.Item>
         </Col>
-        <Col span={6}>
+        <Col span={3}>
           <Form.Item
             label="UF"
             name={["endereco", "uf"]}
@@ -49,7 +49,7 @@ function EnderecoForm() {
             <Input placeholder="UF" maxLength={2} />
           </Form.Item>
         </Col>
-        <Col span={6}>
+        <Col span={8}>
          <Form.Item
             label="Região"
             name={["endereco", "regiao"]}

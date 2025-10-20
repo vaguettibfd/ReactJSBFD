@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Radio, DatePicker, Row, Col, message } from "antd";
 import { ArrowUpOutlined } from "@ant-design/icons";
 import EnderecoForm from "./EnderecoForm";
-import TelefoneList from "./TelefoneList";
-import PFForm from "./PFForm";
-import PJForm from "./PJForm";
+import TelefoneList from "./TelefoneList"; // opcional, se você tiver
 import "./pessoaform.css";
 
 function PessoaForm() {
@@ -12,44 +10,37 @@ function PessoaForm() {
   const [form] = Form.useForm();
   const [mostrarTopo, setMostrarTopo] = useState(false);
 
+  // ✅ Submissão
   function onFinish(values) {
     console.log("📋 Dados submetidos:", values);
     message.success("Dados armazenados localmente (modo formulário).");
   }
 
+  // ✅ Alterna entre PF e PJ sem apagar tudo
   function onChangeTipo(e) {
     const novoTipo = e.target.value;
     setTipo(novoTipo);
-  
-    // Pega os valores atuais do formulário
+
     const valoresAtuais = form.getFieldsValue();
-  
-    // Reseta todos os campos, mas mantém o tipo selecionado
-    form.resetFields();
     form.setFieldsValue({
       ...valoresAtuais,
       tipo: novoTipo,
     });
   }
-  
 
-  // Mostra/esconde o botão conforme a rolagem
-  useEffect(function () {
-    function verificarScroll() {
-      if (window.scrollY > 200) {
-        setMostrarTopo(true);
-      } else {
-        setMostrarTopo(false);
-      }
-    }
+  // ✅ Mostrar botão de “voltar ao topo”
+  useEffect(() => {
+    const verificarScroll = () => {
+      setMostrarTopo(window.scrollY > 200);
+    };
     window.addEventListener("scroll", verificarScroll);
     return () => window.removeEventListener("scroll", verificarScroll);
   }, []);
 
-  // Função para rolar suavemente até o topo
-  function voltarAoTopo() {
+  // ✅ Função de scroll suave
+  const voltarAoTopo = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  };
 
   return (
     <div className="main-scroll">
@@ -88,17 +79,60 @@ function PessoaForm() {
             <Input placeholder="exemplo@email.com" />
           </Form.Item>
 
-          <EnderecoForm />
+          {/* ✅ Endereço Integrado */}
+          <EnderecoForm form={form} />
+
+          {/* ✅ Telefones (se existir o componente) */}
           <TelefoneList form={form} />
 
+          {/* ✅ Campos específicos */}
           {tipo === "PF" ? (
-           <PFForm/>
+            <>
+              <Form.Item
+                label="CPF"
+                name="cpf"
+                rules={[{ required: true, message: "Informe o CPF!" }]}
+              >
+                <Input placeholder="Somente números" maxLength={11} />
+              </Form.Item>
+
+              <Form.Item label="Data de Nascimento" name="dataNascimento">
+                <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+              </Form.Item>
+
+              <Form.Item label="Título Eleitoral - Número" name={["titulo", "numero"]}>
+                <Input placeholder="Número do título" />
+              </Form.Item>
+              <Form.Item label="Zona" name={["titulo", "zona"]}>
+                <Input placeholder="Zona eleitoral" />
+              </Form.Item>
+              <Form.Item label="Seção" name={["titulo", "secao"]}>
+                <Input placeholder="Seção eleitoral" />
+              </Form.Item>
+            </>
           ) : (
-            <PJForm/>
+            <>
+              <Form.Item
+                label="CNPJ"
+                name="cnpj"
+                rules={[{ required: true, message: "Informe o CNPJ!" }]}
+              >
+                <Input placeholder="00.000.000/0000-00" />
+              </Form.Item>
+              <Form.Item label="Inscrição Estadual" name={["ie", "numero"]}>
+                <Input placeholder="Número da IE" />
+              </Form.Item>
+              <Form.Item label="Estado" name={["ie", "estado"]}>
+                <Input placeholder="UF" maxLength={2} />
+              </Form.Item>
+              <Form.Item label="Data de Registro" name={["ie", "dataRegistro"]}>
+                <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+              </Form.Item>
+            </>
           )}
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" onClick={onFinish} block>
+            <Button type="primary" htmlType="submit" block>
               Salvar
             </Button>
           </Form.Item>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Form, Input, Button, Radio, message } from "antd";
 import { ArrowUpOutlined } from "@ant-design/icons";
-import EnderecoForm from "./EnderecoForm";
+import EnderecoForm from "./EnderecoFormEX";
 import TelefoneList from "./TelefoneListOO";
 import PFForm from "./PFForm";
 import PJForm from "./PJForm";
@@ -14,6 +14,10 @@ import Endereco from "../../objetos/pessoas/Endereco.mjs";
 import Telefone from "../../objetos/pessoas/Telefone.mjs";
 import Titulo from "../../objetos/pessoas/Titulo.mjs";
 import IE from "../../objetos/pessoas/IE.mjs";
+
+import PFDAO from "../../objetos/dao/PFDAOLocal.mjs";
+import PJDAO from "../../objetos/dao/PJDAOLocal.mjs";
+
 
 function PessoaForm() {
   const [tipo, setTipo] = useState("PF");
@@ -94,6 +98,19 @@ function PessoaForm() {
 
         pessoa = pj;
       }
+
+        // ===== Persistência via DAO =====
+    if (pessoa) {
+      if (values.tipo === "PF") {
+        const pfDAO = new PFDAO();
+        pfDAO.salvar(pessoa);
+        message.success("Pessoa Física salva com sucesso!");
+      } else if (values.tipo === "PJ") {
+        const pjDAO = new PJDAO();
+        pjDAO.salvar(pessoa);
+        message.success("Pessoa Jurídica salva com sucesso!");
+      }
+    }
 
       console.clear();
       console.log("✅ OBJETO FINAL INSTANTIADO ===>", pessoa);
@@ -180,7 +197,7 @@ function PessoaForm() {
           </Form.Item>
 
           {/* Endereço e Telefones */}
-          <EnderecoForm />
+          <EnderecoForm form={form}/>
           <TelefoneList form={form} />
 
           {/* PF ou PJ */}

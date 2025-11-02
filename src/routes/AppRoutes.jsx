@@ -14,6 +14,7 @@ function AppRoutes() {
         <Route path="cadastrar"  element={<PessoaForm />} />
         <Route path="listar" element={<ListaPessoas />} />
         <Route path="visualizar/:tipo/:id" element={<VisualizaPessoa />} />
+        <Route path="atualizar/:tipo/:id" element={<VisualizaPessoa />} /> 
       </Route>
     </Routes>
   );

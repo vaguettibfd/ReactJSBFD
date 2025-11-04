@@ -1,67 +1,55 @@
-// PJDAO.mjs
+import PJ from "../pessoas/PJ.mjs";
+
 export default class PJDAO {
-    constructor(storageKey = "pessoasPJ") {
-      this.storageKey = storageKey;
-    }
-  
-    salvar(pj) {
-      const lista = this.listar();
-  
-      // === Endereço ===
-      const end = pj.getEndereco();
-      const objEndereco = end
-        ? {
-            cep: end.getCep(),
-            logradouro: end.getLogradouro(),
-            bairro: end.getBairro(),
-            cidade: end.getCidade(),
-            uf: end.getUf(),
-            regiao: end.getRegiao(),
-          }
-        : null;
-  
-      // === Telefones ===
-      const telefones = (pj.getTelefones() || []).map((f) => ({
-        ddd: f.getDdd(),
-        numero: f.getNumero(),
-      }));
-  
-      // === Inscrição Estadual ===
-      const ie = pj.getIE()
-        ? {
-            numero: pj.getIE().getNumero(),
-            estado: pj.getIE().getEstado(),
-            dataRegistro: pj.getIE().getDataRegistro(),
-          }
-        : null;
-  
-      // === Objeto final serializável ===
-      const obj = {
-        nome: pj.getNome(),
-        email: pj.getEmail(),
-        cnpj: pj.getCNPJ(),
-        endereco: objEndereco,
-        telefones,
-        ie,
-      };
-  
-      lista.push(obj);
-      localStorage.setItem(this.storageKey, JSON.stringify(lista));
-      return obj;
-    }
-  
-    listar() {
-      const dados = localStorage.getItem(this.storageKey);
-      return dados ? JSON.parse(dados) : [];
-    }
-  
-    excluir(cnpj) {
-      const lista = this.listar().filter((p) => p.cnpj !== cnpj);
-      localStorage.setItem(this.storageKey, JSON.stringify(lista));
-    }
-  
-    limpar() {
-      localStorage.removeItem(this.storageKey);
+  constructor() {
+    this.chave = "pessoasJuridicas";
+  }
+
+  toPlain(pj) {
+    return {
+      nome: pj.nome,
+      email: pj.email,
+      cnpj: pj.cnpj,
+      endereco: pj.endereco || {},
+      telefones: pj.telefones || [],
+      ie: pj.ie || {},
+    };
+  }
+
+  listar() {
+    const dados = localStorage.getItem(this.chave);
+    if (!dados) return [];
+    try {
+      return JSON.parse(dados);
+    } catch {
+      return [];
     }
   }
-  
+
+  salvar(pj) {
+    const lista = this.listar();
+    const obj = this.toPlain(pj);
+    lista.push(obj);
+    localStorage.setItem(this.chave, JSON.stringify(lista));
+  }
+
+  atualizar(cnpj, novoPJ) {
+    const lista = this.listar();
+    const idx = lista.findIndex((p) => p.cnpj === cnpj);
+    if (idx >= 0) {
+      lista[idx] = this.toPlain(novoPJ);
+      localStorage.setItem(this.chave, JSON.stringify(lista));
+    } else {
+      console.warn("PJ não encontrado para atualização:", cnpj);
+    }
+  }
+
+  excluir(cnpj) {
+    const novaLista = this.listar().filter((p) => p.cnpj !== cnpj);
+    localStorage.setItem(this.chave, JSON.stringify(novaLista));
+  }
+
+  limpar() {
+    localStorage.removeItem(this.chave);
+  }
+}

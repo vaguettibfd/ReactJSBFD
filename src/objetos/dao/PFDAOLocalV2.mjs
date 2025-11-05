@@ -5,7 +5,6 @@ export default class PFDAO {
     this.chave = "pessoasFisicas";
   }
 
-  // 🔹 Retorna lista atual
   listar() {
     try {
       const dados = localStorage.getItem(this.chave);
@@ -16,7 +15,11 @@ export default class PFDAO {
     }
   }
 
-  // 🔹 Converte a classe PF para objeto simples
+  gerarId() {
+    // Gera ID único (timestamp + random)
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+  }
+
   toPlain(pf) {
     if (!pf) return {};
     const end = pf.getEndereco?.();
@@ -24,6 +27,7 @@ export default class PFDAO {
     const telefones = pf.getTelefones?.() || [];
 
     return {
+      id: pf.id ?? this.gerarId(), // ← garante ID único
       nome: pf.getNome?.(),
       email: pf.getEmail?.(),
       cpf: pf.getCPF?.(),
@@ -51,45 +55,30 @@ export default class PFDAO {
     };
   }
 
-  // 🔹 Salvar novo registro
   salvar(pf) {
     const lista = this.listar();
     const obj = this.toPlain(pf);
-
-    if (!obj.cpf) {
-      console.error("❌ CPF não informado, não é possível salvar PF");
-      return;
-    }
+    if (!obj.id) obj.id = this.gerarId();
 
     lista.push(obj);
     localStorage.setItem(this.chave, JSON.stringify(lista));
-    console.info("✅ PF salva:", obj);
+    return obj;
   }
 
-  // 🔹 Atualizar registro existente
-  atualizar(cpf, novoPF) {
+  atualizar(id, novoPF) {
     const lista = this.listar();
-    const idx = lista.findIndex((p) => p.cpf === cpf);
     const obj = this.toPlain(novoPF);
+    obj.id = id;
 
-    if (idx !== -1) {
-      lista[idx] = obj;
-      console.info("♻️ PF atualizada:", obj);
-    } else {
-      console.warn("⚠️ CPF não encontrado, adicionando novo:", cpf);
-      lista.push(obj);
-    }
+    const idx = lista.findIndex((p) => p.id === id);
+    if (idx >= 0) lista[idx] = obj;
+    else lista.push(obj);
 
     localStorage.setItem(this.chave, JSON.stringify(lista));
   }
 
-  excluir(cpf) {
-    const novaLista = this.listar().filter((p) => p.cpf !== cpf);
+  excluir(id) {
+    const novaLista = this.listar().filter((p) => p.id !== id);
     localStorage.setItem(this.chave, JSON.stringify(novaLista));
-    console.info("🗑️ PF removida:", cpf);
-  }
-
-  limpar() {
-    localStorage.removeItem(this.chave);
   }
 }

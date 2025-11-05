@@ -1,166 +1,131 @@
-import React, { useState, useEffect } from "react";
-import { Table, Button, Input, Select, Space, Popconfirm, message, Tooltip } from "antd";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import React, { useEffect, useState } from "react";
+import { Table, Button, Space, Popconfirm, message, Tag, Input, Select } from "antd";
+import { EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import PFDAO from "../../objetos/dao/PFDAOLocalV2.mjs";
 import PJDAO from "../../objetos/dao/PJDAOLocalV2.mjs";
 
-const { Option } = Select;
+export default function ListaPessoas() {
+  const navigate = useNavigate();
 
-function ListaPessoas() {
   const [tipo, setTipo] = useState("PF");
   const [filtroNome, setFiltroNome] = useState("");
   const [dados, setDados] = useState([]);
-  const navigate = useNavigate();
 
   const pfDAO = new PFDAO();
   const pjDAO = new PJDAO();
 
-  // Carregar lista
+  // 🔹 Atualiza a lista conforme o tipo ou filtro
+  function carregarLista() {
+    const dao = tipo === "PF" ? pfDAO : pjDAO;
+    const lista = dao.listar();
+
+    const filtrados = lista.filter((p) =>
+      p.nome?.toLowerCase().includes(filtroNome.toLowerCase())
+    );
+
+    setDados(filtrados);
+  }
+
   useEffect(() => {
-    carregar();
+    carregarLista();
   }, [tipo, filtroNome]);
 
-  function carregar() {
-    let lista = tipo === "PF" ? pfDAO.listar() : pjDAO.listar();
-    if (filtroNome.trim() !== "") {
-      lista = lista.filter((p) =>
-        p.nome.toLowerCase().includes(filtroNome.toLowerCase())
-      );
-    }
-    setDados(lista);
-  }
-
   function excluirPessoa(id) {
-    if (tipo === "PF") pfDAO.excluir(id);
-    else pjDAO.excluir(id);
+    const dao = tipo === "PF" ? pfDAO : pjDAO;
+    dao.excluir(id);
     message.success("Registro excluído com sucesso!");
-    carregar();
+    carregarLista();
   }
 
-  const colunasComuns = [
+  const colunas = [
     {
       title: "Nome",
       dataIndex: "nome",
       key: "nome",
-      sorter: (a, b) => a.nome.localeCompare(b.nome),
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
     },
+    {
+      title: tipo === "PF" ? "CPF" : "CNPJ",
+      dataIndex: tipo === "PF" ? "cpf" : "cnpj",
+      key: "doc",
+      width: 200,
+    },
+    {
+      title: "Ações",
+      key: "acoes",
+      width: 180,
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => navigate(`/visualizar/${tipo}/${record.id}`)}
+          />
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/editar/${tipo}/${record.id}`)}
+          />
+          <Popconfirm
+            title="Deseja realmente excluir?"
+            onConfirm={() => excluirPessoa(record.id)}
+          >
+            <Button danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    },
   ];
 
-  const colunasEspecificas =
-    tipo === "PF"
-      ? [
-          { title: "CPF", dataIndex: "cpf", key: "cpf" },
-          {
-            title: "Ações",
-            key: "acoes",
-            render: (_, record) => (
-              <Space>
-                <Tooltip title="Visualizar">
-                  <Button
-                    type="text"
-                    icon={<EyeOutlined />}
-                    onClick={() => navigate(`/visualizar/PF/${record.cpf}`)}
-                  />
-                </Tooltip>
-
-                <Tooltip title="Editar">
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => navigate(`/editar/PF/${record.cpf}`)}
-                  />
-                </Tooltip>
-
-                <Popconfirm
-                  title="Confirmar exclusão?"
-                  onConfirm={() => excluirPessoa(record.cpf)}
-                  okText="Sim"
-                  cancelText="Não"
-                >
-                  <Tooltip title="Excluir">
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                  </Tooltip>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]
-      : [
-          { title: "CNPJ", dataIndex: "cnpj", key: "cnpj" },
-          {
-            title: "Ações",
-            key: "acoes",
-            render: (_, record) => (
-              <Space>
-                <Tooltip title="Visualizar">
-                  <Button
-                    type="text"
-                    icon={<EyeOutlined />}
-                    onClick={() => navigate(`/visualizar/PJ/${record.cnpj}`)}
-                  />
-                </Tooltip>
-
-                <Tooltip title="Editar">
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => navigate(`/editar/PJ/${record.cnpj}`)}
-                  />
-                </Tooltip>
-
-                <Popconfirm
-                  title="Confirmar exclusão?"
-                  onConfirm={() => excluirPessoa(record.cnpj)}
-                  okText="Sim"
-                  cancelText="Não"
-                >
-                  <Tooltip title="Excluir">
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                  </Tooltip>
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ];
-
   return (
-    <>
-      <Space style={{ marginBottom: 16 }}>
-        <Select value={tipo} onChange={setTipo} style={{ width: 180 }}>
-          <Option value="PF">Pessoa Física</Option>
-          <Option value="PJ">Pessoa Jurídica</Option>
-        </Select>
+    <div
+      style={{
+        maxWidth: 1000,
+        margin: "24px auto",
+        background: "#fff",
+        padding: 24,
+        borderRadius: 8,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      }}
+    >
+      <h2 style={{ textAlign: "center", marginBottom: 20 }}>
+        Listagem de Pessoas
+      </h2>
 
+      <Space style={{ marginBottom: 20 }}>
+        <Select
+          value={tipo}
+          onChange={(v) => setTipo(v)}
+          style={{ width: 200 }}
+          options={[
+            { value: "PF", label: "Pessoa Física" },
+            { value: "PJ", label: "Pessoa Jurídica" },
+          ]}
+        />
         <Input
-          placeholder="Filtrar por nome..."
-          prefix={<SearchOutlined />}
+          placeholder="Filtrar por nome"
           value={filtroNome}
           onChange={(e) => setFiltroNome(e.target.value)}
-          style={{ width: 240 }}
+          allowClear
+          style={{ width: 300 }}
         />
-
-        <Button onClick={carregar}>Atualizar</Button>
+        <Button type="primary" onClick={carregarLista}>
+          Atualizar
+        </Button>
       </Space>
 
       <Table
-        columns={[...colunasComuns, ...colunasEspecificas]}
         dataSource={dados}
-        rowKey={tipo === "PF" ? "cpf" : "cnpj"}
+        columns={colunas}
+        rowKey="id"
         pagination={{ pageSize: 6 }}
       />
-    </>
+    </div>
   );
 }
 
-export default ListaPessoas;
+
+

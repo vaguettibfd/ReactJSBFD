@@ -1,6 +1,6 @@
 import PJ from "../pessoas/PJ.mjs";
 
-export default class PJDAO{
+export default class PJDAO {
   constructor() {
     this.chave = "pessoasJuridicas";
   }
@@ -15,6 +15,10 @@ export default class PJDAO{
     }
   }
 
+  gerarId() {
+    return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+  }
+
   toPlain(pj) {
     if (!pj) return {};
     const end = pj.getEndereco?.();
@@ -22,6 +26,7 @@ export default class PJDAO{
     const telefones = pj.getTelefones?.() || [];
 
     return {
+      id: pj.id ?? this.gerarId(),
       nome: pj.getNome?.(),
       email: pj.getEmail?.(),
       cnpj: pj.getCNPJ?.(),
@@ -52,41 +57,27 @@ export default class PJDAO{
   salvar(pj) {
     const lista = this.listar();
     const obj = this.toPlain(pj);
-
-    if (!obj.cnpj) {
-      console.error("❌ CNPJ não informado, não é possível salvar PJ");
-      return;
-    }
+    if (!obj.id) obj.id = this.gerarId();
 
     lista.push(obj);
     localStorage.setItem(this.chave, JSON.stringify(lista));
-    console.info("✅ PJ salva:", obj);
+    return obj;
   }
 
-  atualizar(cnpj, novoPJ) {
+  atualizar(id, novoPJ) {
     const lista = this.listar();
-    const idx = lista.findIndex((p) => p.cnpj === cnpj);
     const obj = this.toPlain(novoPJ);
+    obj.id = id;
 
-    if (idx !== -1) {
-      lista[idx] = obj;
-      console.info("♻️ PJ atualizada:", obj);
-    } else {
-      console.warn("⚠️ CNPJ não encontrado, adicionando novo:", cnpj);
-      lista.push(obj);
-    }
+    const idx = lista.findIndex((p) => p.id === id);
+    if (idx >= 0) lista[idx] = obj;
+    else lista.push(obj);
 
     localStorage.setItem(this.chave, JSON.stringify(lista));
   }
 
-  excluir(cnpj) {
-    const novaLista = this.listar().filter((p) => p.cnpj !== cnpj);
+  excluir(id) {
+    const novaLista = this.listar().filter((p) => p.id !== id);
     localStorage.setItem(this.chave, JSON.stringify(novaLista));
-    console.info("🗑️ PJ removida:", cnpj);
-  }
-
-  limpar() {
-    localStorage.removeItem(this.chave);
   }
 }
-

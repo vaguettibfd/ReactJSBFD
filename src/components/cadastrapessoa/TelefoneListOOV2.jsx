@@ -21,7 +21,7 @@ export default function TelefoneListOO({ form }) {
                   name={[name, "ddd"]}
                   rules={[{ required: true, message: "DDD obrigatório" }]}
                 >
-                  <Input placeholder="DDD" style={{ width: 90 }} />
+                  <Input placeholder="DDD" style={{ width: 90 }} maxLength={2}/>
                 </Form.Item>
 
                 <Form.Item
@@ -29,7 +29,7 @@ export default function TelefoneListOO({ form }) {
                   name={[name, "numero"]}
                   rules={[{ required: true, message: "Número obrigatório" }]}
                 >
-                  <Input placeholder="Número" style={{ width: 200 }} />
+                  <Input placeholder="Número" style={{ width: 200 }} maxLength={9}/>
                 </Form.Item>
 
                 <MinusCircleOutlined onClick={() => remove(name)} />

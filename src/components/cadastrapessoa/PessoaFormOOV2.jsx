@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Form, Input, Button, Radio, message, Modal } from "antd";
+import { Form, Input, Button, Radio, message } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
-// Subcomponentes (mantida a ordem: Endereço, Telefones, depois PF/PJ)
-import EnderecoFormEX from "./EnderecoFormEXV2.jsx";
-import TelefoneListOO from "./TelefoneListOOV2.jsx";
+// === Subcomponentes ===
+import EnderecoForm from "./EnderecoFormEXV2.jsx";
+import TelefoneList from "./TelefoneListOOV2.jsx";
 import PFForm from "./PFForm.jsx";
 import PJForm from "./PJForm.jsx";
 
-// DAOs
+// === DAOs ===
 import PFDAO from "../../objetos/dao/PFDAOLocalV2.mjs";
 import PJDAO from "../../objetos/dao/PJDAOLocalV2.mjs";
 
-// Modelos
+// === Classes ===
 import PF from "../../objetos/pessoas/PF.mjs";
 import PJ from "../../objetos/pessoas/PJ.mjs";
 import Endereco from "../../objetos/pessoas/Endereco.mjs";
@@ -20,80 +21,92 @@ import Telefone from "../../objetos/pessoas/Telefone.mjs";
 import Titulo from "../../objetos/pessoas/Titulo.mjs";
 import IE from "../../objetos/pessoas/IE.mjs";
 
-function PessoaFormOO() {
+export default function PessoaFormOOV2() {
   const [tipo, setTipo] = useState("PF");
-  const [form] = Form.useForm();
   const [editando, setEditando] = useState(false);
+  const [form] = Form.useForm();
   const navigate = useNavigate();
   const { tipo: tipoParam, id } = useParams();
 
   const pfDAO = new PFDAO();
   const pjDAO = new PJDAO();
 
-  // Carrega dados para edição OU limpa no cadastro
+  // =========================
+  // EFEITO: Carregar dados no modo edição
+  // =========================
   useEffect(() => {
-    const scrollTop = () => {
-      const c = document.getElementById("scrollContainer");
-      if (c) c.scrollTo({ top: 0, behavior: "smooth" });
-      else window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
     if (id && tipoParam) {
       setEditando(true);
       setTipo(tipoParam);
+
       const dao = tipoParam === "PF" ? pfDAO : pjDAO;
-      const pessoa = dao.listar().find((p) =>
-        tipoParam === "PF" ? p.cpf === id : p.cnpj === id
-      );
+      const lista = dao.listar();
+      const pessoa = lista.find((p) => p.id === id);
 
       if (pessoa) {
-        // Define todos os valores antes de renderizar a lista de telefones
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
         const valores = {
           tipo: tipoParam,
           nome: pessoa.nome,
           email: pessoa.email,
           endereco: pessoa.endereco || {},
           telefones: pessoa.telefones || [],
-          ...(tipoParam === "PF"
-            ? { cpf: pessoa.cpf, titulo: pessoa.titulo || {} }
-            : { cnpj: pessoa.cnpj, ie: pessoa.ie || {} }),
         };
+
+        if (tipoParam === "PF") {
+          valores.cpf = pessoa.cpf;
+          valores.titulo = pessoa.titulo || { numero: "", zona: "", secao: "" };
+        } else {
+          const ieObj = pessoa.ie || {};
+          valores.cnpj = pessoa.cnpj;
+          valores.ie = {
+            numero: ieObj.numero || "",
+            estado: ieObj.estado || "",
+            dataRegistro: ieObj.dataRegistro
+              ? dayjs(ieObj.dataRegistro)
+              : null,
+          };
+        }
+
         form.setFieldsValue(valores);
-        // força reposicionamento visual
-        setTimeout(scrollTop, 50);
+      } else {
+        message.error("Pessoa não encontrada!");
+        navigate("/listar");
       }
-    } else {
-      // Novo cadastro: limpa tudo e volta para PF por padrão
-      setEditando(false);
-      setTipo("PF");
-      form.resetFields();
-      setTimeout(scrollTop, 50);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, tipoParam]);
 
+  // =========================
+  // TROCA PF/PJ
+  // =========================
   function onChangeTipo(e) {
     const novoTipo = e.target.value;
     setTipo(novoTipo);
-    const atuais = form.getFieldsValue();
+    const valoresAtuais = form.getFieldsValue();
     form.resetFields();
-    form.setFieldsValue({ ...atuais, tipo: novoTipo });
+    form.setFieldsValue({
+      ...valoresAtuais,
+      tipo: novoTipo,
+    });
   }
 
+  // =========================
+  // SALVAR / ATUALIZAR
+  // =========================
   async function onFinish(values) {
     try {
-      // Endereço
-      const e = values.endereco || {};
-      const end = new Endereco();
-      end.setCep(e.cep);
-      end.setLogradouro(e.logradouro);
-      end.setBairro(e.bairro);
-      end.setCidade(e.cidade);
-      end.setUf(e.uf);
-      end.setRegiao(e.regiao);
-
-      // Monta PF/PJ
       let pessoa;
+      const endVals = values.endereco || {};
+
+      const end = new Endereco();
+      end.setCep(endVals.cep);
+      end.setLogradouro(endVals.logradouro);
+      end.setBairro(endVals.bairro);
+      end.setCidade(endVals.cidade);
+      end.setUf(endVals.uf);
+      end.setRegiao(endVals.regiao);
+
       if (values.tipo === "PF") {
         const pf = new PF();
         pf.setNome(values.nome);
@@ -108,78 +121,87 @@ function PessoaFormOO() {
           t.setSecao(values.titulo.secao);
           pf.setTitulo(t);
         }
-        (values.telefones || []).forEach((tel) => {
-          const f = new Telefone();
-          f.setDdd(tel.ddd);
-          f.setNumero(tel.numero);
-          pf.addTelefone(f);
-        });
+
+        if (values.telefones?.length > 0) {
+          values.telefones.forEach((tel) => {
+            const fone = new Telefone();
+            fone.setDdd(tel.ddd);
+            fone.setNumero(tel.numero);
+            pf.addTelefone(fone);
+          });
+        }
+
         pessoa = pf;
       } else {
         const pj = new PJ();
         pj.setNome(values.nome);
         pj.setEmail(values.email);
-        pj.setCNPJ(values.cnpj); // CNPJ CONTINUA NO PJForm, mas vem no values
+        pj.setCNPJ(values.cnpj);
         pj.setEndereco(end);
 
         if (values.ie) {
-          const i = new IE();
-          i.setNumero(values.ie.numero);
-          i.setEstado(values.ie.estado);
-          i.setDataRegistro(values.ie.dataRegistro);
-          pj.setIE(i);
+          const ie = new IE();
+          ie.setNumero(values.ie.numero);
+          ie.setEstado(values.ie.estado);
+
+          // 👇 converte dayjs → string para salvar no DAO
+          const dr = values.ie.dataRegistro;
+          const dataRegistro =
+            dr && typeof dr === "object" && typeof dr.format === "function"
+              ? dr.format("YYYY-MM-DD")
+              : dr || "";
+
+          ie.setDataRegistro(dataRegistro);
+          pj.setIE(ie);
         }
-        (values.telefones || []).forEach((tel) => {
-          const f = new Telefone();
-          f.setDdd(tel.ddd);
-          f.setNumero(tel.numero);
-          pj.addTelefone(f);
-        });
+
+        if (values.telefones?.length > 0) {
+          values.telefones.forEach((tel) => {
+            const fone = new Telefone();
+            fone.setDdd(tel.ddd);
+            fone.setNumero(tel.numero);
+            pj.addTelefone(fone);
+          });
+        }
+
         pessoa = pj;
       }
 
       const dao = tipo === "PF" ? pfDAO : pjDAO;
-
-      if (editando) {
+      if (editando && id) {
         dao.atualizar(id, pessoa);
-        message.success("Registro atualizado com sucesso!", 3);
-        navigate("/listar");
+        message.success("Registro atualizado com sucesso!");
       } else {
         dao.salvar(pessoa);
-        form.resetFields();
-        Modal.success({
-          title: "Cadastro realizado com sucesso!",
-          content: `O registro de ${
-            values.tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"
-          } foi salvo com êxito.`,
-          okText: "OK",
-          onOk: () => navigate("/listar"),
-        });
+        message.success("Registro criado com sucesso!");
       }
+
+      form.resetFields();
+      setTimeout(() => navigate("/listar"), 600);
     } catch (erro) {
       console.error("❌ Erro ao salvar:", erro);
       message.error("Erro ao salvar registro: " + erro.message);
     }
   }
 
-  // chave para “refrescar” o TelefoneList quando editar
-  const telefonesKey = (form.getFieldValue("telefones") || []).length;
-
+  // =========================
+  // RENDER
+  // =========================
   return (
     <div
-      id="scrollContainer"
+      className="main-scroll"
       style={{
         overflowY: "auto",
         overflowX: "hidden",
-        height: "calc(100vh - 100px)",
-        padding: "16px 12px 32px 12px",
-        boxSizing: "border-box",
+        height: "100vh",
+        background: "#f9f9f9",
       }}
     >
       <div
+        className="form-container"
         style={{
           maxWidth: 800,
-          margin: "0 auto",
+          margin: "24px auto",
           background: "#fff",
           padding: 24,
           borderRadius: 8,
@@ -192,16 +214,24 @@ function PessoaFormOO() {
             : `Cadastro de ${tipo === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}`}
         </h2>
 
-        <Form layout="vertical" form={form} onFinish={onFinish} scrollToFirstError>
-          {/* 1) Tipo */}
-          <Form.Item label="Tipo de Pessoa" name="tipo" initialValue="PF">
+        <Form
+          layout="vertical"
+          form={form}
+          onFinish={onFinish}
+          scrollToFirstError
+        >
+          <Form.Item
+            label="Tipo de Pessoa"
+            name="tipo"
+            initialValue="PF"
+            style={{ marginBottom: 10 }}
+          >
             <Radio.Group onChange={onChangeTipo}>
               <Radio value="PF">Pessoa Física</Radio>
               <Radio value="PJ">Pessoa Jurídica</Radio>
             </Radio.Group>
           </Form.Item>
 
-          {/* 2) Nome */}
           <Form.Item
             label="Nome"
             name="nome"
@@ -210,7 +240,6 @@ function PessoaFormOO() {
             <Input placeholder="Nome completo ou razão social" />
           </Form.Item>
 
-          {/* 3) E-mail */}
           <Form.Item
             label="Email"
             name="email"
@@ -222,13 +251,26 @@ function PessoaFormOO() {
             <Input placeholder="exemplo@email.com" />
           </Form.Item>
 
-          {/* 4) Endereço (CEP auto via ViaCEP dentro do próprio componente) */}
-          <EnderecoFormEX />
+          {tipo === "PF" ? (
+            <Form.Item
+              label="CPF"
+              name="cpf"
+              rules={[{ required: true, message: "Informe o CPF!" }]}
+            >
+              <Input placeholder="Somente números" maxLength={11}/>
+            </Form.Item>
+          ) : (
+            <Form.Item
+              label="CNPJ"
+              name="cnpj"
+              rules={[{ required: true, message: "Informe o CNPJ!" }]}
+            >
+              <Input placeholder="Somente números" maxLength={18}/>
+            </Form.Item>
+          )}
 
-          {/* 5) Telefones */}
-          <TelefoneListOO form={form} key={telefonesKey} />
-
-          {/* 6) Campos específicos (CPF no PFForm, CNPJ no PJForm) */}
+          <EnderecoForm />
+          <TelefoneList form={form} />
           {tipo === "PF" ? <PFForm /> : <PJForm />}
 
           <Form.Item style={{ marginTop: 20 }}>
@@ -250,4 +292,3 @@ function PessoaFormOO() {
   );
 }
 
-export default PessoaFormOO;
